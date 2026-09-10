@@ -6,6 +6,7 @@
 import os from "node:os";
 import path from "node:path";
 import { existsSync, mkdirSync, rmSync } from "node:fs";
+import modelsJson from "./models.json";
 
 const IS_WIN = process.platform === "win32";
 const IS_MAC = process.platform === "darwin";
@@ -87,69 +88,14 @@ interface ProviderConfig {
   models: Record<string, unknown>;
 }
 
+// Single source of truth: src/models.json. Consumed here (provider config),
+// by proxy.ts (/v1/models), and by the config/ templates (kept in sync by test).
 export function buildModels(): Record<string, unknown> {
-  return {
-    "deepseek/deepseek-v4-flash": {
-      id: "deepseek/deepseek-v4-flash",
-      name: "DeepSeek V4 Flash",
-      variants: {
-        low: { reasoningEffort: "low" },
-        medium: { reasoningEffort: "medium" },
-        high: { reasoningEffort: "high" },
-        max: { reasoningEffort: "high", thinking: { type: "enabled", budgetTokens: 16000 } },
-      },
-    },
-    "deepseek/deepseek-v4.1-flash": {
-      id: "deepseek/deepseek-v4.1-flash",
-      name: "DeepSeek V4.1 Flash",
-      variants: {
-        low: { reasoningEffort: "low" },
-        medium: { reasoningEffort: "medium" },
-        high: { reasoningEffort: "high" },
-        max: { reasoningEffort: "high", thinking: { type: "enabled", budgetTokens: 16000 } },
-      },
-    },
-    "deepseek/deepseek-v4-flash-fast": {
-      id: "deepseek/deepseek-v4-flash-fast",
-      name: "DeepSeek V4 Flash Fast",
-      variants: {
-        low: { reasoningEffort: "low" },
-        medium: { reasoningEffort: "medium" },
-        high: { reasoningEffort: "high" },
-        max: { reasoningEffort: "high", thinking: { type: "enabled", budgetTokens: 16000 } },
-      },
-    },
-    "meituan/LongCat-2.0:free": {
-      id: "meituan/LongCat-2.0:free",
-      name: "LongCat-2.0:Free",
-      variants: {
-        think: { thinking: { type: "enabled", budgetTokens: 8000 } },
-      },
-    },
-    "zai-org/glm-5.3-flash": {
-      id: "zai-org/glm-5.3-flash",
-      name: "GLM-5.3-Flash",
-      variants: {
-        think: { thinking: { type: "enabled", budgetTokens: 8000 } },
-      },
-    },
-    "meta/muse-spark-1.3-contributor": {
-      id: "meta/muse-spark-1.3-contributor",
-      name: "Muse Spark 1.3 Contributor",
-      variants: {
-        low: { thinking: { type: "enabled", budgetTokens: 4000 } },
-        high: { thinking: { type: "enabled", budgetTokens: 8000 } },
-        xhigh: { thinking: { type: "enabled", budgetTokens: 16000 } },
-      },
-    },
-    "meta/muse-spark-1.2-contributor": {
-      id: "meta/muse-spark-1.2-contributor",
-      name: "Muse Spark 1.2 Contributor",
-      variants: {
-        think: { thinking: { type: "enabled", budgetTokens: 8000 } },
-      },
-    },
-  };
+  const out: Record<string, unknown> = {};
+  for (const m of modelsJson.models) {
+    out[m.id] = { id: m.id, name: m.name, variants: m.variants };
+  }
+  return out;
 }
 
 export function buildProviderConfig(hasKey: boolean): ProviderConfig {
@@ -549,7 +495,7 @@ async function main(): Promise<void> {
   const selfDir = import.meta.dirname || path.dirname(new URL(import.meta.url).pathname);
   mkdirSync(PROXY_DIR, { recursive: true });
   let copied = 0;
-  for (const f of ["proxy.ts", "translate.ts", "types.ts"]) {
+  for (const f of ["proxy.ts", "translate.ts", "types.ts", "warmup.ts", "models.json"]) {
     const src = path.join(selfDir, f);
     const dst = path.join(PROXY_DIR, f);
     if (existsSync(src) && src !== dst) {

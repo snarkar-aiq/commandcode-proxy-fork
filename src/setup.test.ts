@@ -1,13 +1,40 @@
 import { describe, expect, test } from "bun:test";
+import path from "node:path";
 import {
+  buildModels,
   buildProviderConfig,
   buildDirectProviderConfig,
   mergeProviderJsonc,
   stripJsonComments,
   hasComments,
 } from "./setup.js";
+import modelsJson from "./models.json";
 
 const SNIPPET = `"commandcode": {\n    "name": "New"\n  }`;
+
+describe("models.json is the single source of truth", () => {
+  const ids = modelsJson.models.map((m) => m.id);
+
+  test("buildModels() mirrors models.json exactly", () => {
+    const models = buildModels();
+    expect(Object.keys(models)).toEqual(ids);
+    for (const m of modelsJson.models) {
+      expect(models[m.id]).toEqual({ id: m.id, name: m.name, variants: m.variants });
+    }
+  });
+
+  for (const file of ["opencode.json", "opencode.jsonc"]) {
+    test(`config/${file} lists every model in both providers`, async () => {
+      const p = path.join(import.meta.dirname, "..", "config", file);
+      const cfg = JSON.parse(stripJsonComments(await Bun.file(p).text())) as {
+        provider: Record<string, { models: Record<string, unknown> }>;
+      };
+      for (const name of ["commandcode", "commandcode-direct"]) {
+        expect(Object.keys(cfg.provider[name]!.models)).toEqual(ids);
+      }
+    });
+  }
+});
 
 describe("stripJsonComments / hasComments", () => {
   test("strips line and block comments, keeps strings", () => {

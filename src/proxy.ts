@@ -24,6 +24,7 @@ import type {
   SSEDelta,
 } from "./types.js";
 import { warmUpstream } from "./warmup.js";
+import modelsJson from "./models.json";
 
 // --- daemon/stop/status handling ---
 const PROJECT_ROOT = path.resolve(import.meta.dirname, "..");
@@ -97,15 +98,9 @@ const UPSTREAM = (process.env.COMMANDCODE_BASE_URL || "https://api.commandcode.a
 const VERSION = process.env.COMMANDCODE_VERSION || "0.52.1";
 const WORKING_DIR = process.env.COMMANDCODE_WORKING_DIR || process.cwd();
 
-const STATIC_MODELS = [
-  "deepseek/deepseek-v4-flash",
-  "deepseek/deepseek-v4.1-flash",
-  "deepseek/deepseek-v4-flash-fast",
-  "meituan/LongCat-2.0:free",
-  "zai-org/glm-5.3-flash",
-  "meta/muse-spark-1.3-contributor",
-  "meta/muse-spark-1.2-contributor",
-];
+// Model catalog comes from the shared src/models.json (see setup.ts).
+const STATIC_MODELS = modelsJson.models.map((m) => m.id);
+const DEFAULT_MODEL = modelsJson.default;
 
 // --- Key resolution: env -> incoming Bearer (opencode forwards /connect key) -> auth.json ---
 
@@ -180,7 +175,7 @@ async function handleChatCompletions(req: Request): Promise<Response> {
   }
 
   const body = (await req.json()) as OpenAIChatRequest;
-  const model = body.model || STATIC_MODELS[0]!;
+  const model = body.model || DEFAULT_MODEL;
   const { system, messages } = openaiMessagesToAlpha(body.messages || []);
   const tools = openaiToolsToAlpha(body.tools || []);
   const wantStream = body.stream !== false;
