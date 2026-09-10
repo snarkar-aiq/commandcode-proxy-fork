@@ -15,6 +15,7 @@ OpenAI Chat Completions → CommandCode `/alpha/generate` shim. Zero-dependency 
 | Proxy (`src/proxy.ts`) | Local endpoint translating downstream requests upstream and streaming events back |
 | Translator (`src/translate.ts`) | Maps OpenAI messages/tools ↔ `ModelMessage[]` / `{name, description, input_schema}` |
 | Wire types (`src/types.ts`) | Canonical OpenAI, SSE, and Alpha/NDJSON shapes |
+| Model catalog (`src/models.json`) | Single source of truth for model ids/names/variants — consumed by proxy, setup, and config templates |
 | Setup (`src/setup.ts`) | Installs the proxy as a service and registers the `commandcode` provider |
 
 ## Translation rules

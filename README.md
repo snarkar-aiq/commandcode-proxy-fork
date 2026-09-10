@@ -215,6 +215,7 @@ commandcode-proxy/
 │   ├── proxy.ts          # Bun.serve server, routing, key resolution, streaming, --daemon/--stop/--status
 │   ├── translate.ts      # pure translation functions (no server)
 │   ├── types.ts          # wire protocol types (OpenAI + Alpha + NDJSON)
+│   ├── models.json       # single source of truth for the model catalog (id/name/variants)
 │   └── setup.ts          # install/uninstall system service
 ├── scripts/
 │   ├── start.sh          # background wrapper (Linux/macOS, nohup)

@@ -9,3 +9,5 @@ src/.gitkeep
 /proxy.ts
 /translate.ts
 /types.ts
+/warmup.ts
+/models.json
