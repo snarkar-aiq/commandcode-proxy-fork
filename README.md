@@ -122,6 +122,13 @@ Run with `bun` from PowerShell/CMD.
 
 ## opencode.json
 
+Two providers are registered (the direct one is listed first, so it's the default):
+
+| Provider | baseURL | Path |
+|----------|---------|------|
+| `commandcode-direct` | `https://api.commandcode.ai/provider/v1` | Direct OpenAI-compatible endpoint — no conversion, sends straight through |
+| `commandcode` | `http://127.0.0.1:18731/v1` | Local proxy → `POST /alpha/generate` |
+
 Set `provider.commandcode.options.baseURL` to `http://127.0.0.1:18731/v1`. Models carry an explicit `id` (canonical id sent upstream as `params.model`).
 
 > **v1 & v2 compatible.** Use the **singular** `provider` top-level key with `npm: "@ai-sdk/openai-compatible"`. A plural `providers` block is silently ignored by OpenCode v1 and rejected as malformed by opencode2 / v2 — this is the most common cause of models not appearing. `thinking.budgetTokens` is camelCase.

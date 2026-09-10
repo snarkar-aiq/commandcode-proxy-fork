@@ -92,10 +92,10 @@ function removeProviderFromJson(text: string, name: string): string | null {
   } catch {
     return null;
   }
-  const providers = cfg.providers as Record<string, unknown> | undefined;
+  const providers = cfg.provider as Record<string, unknown> | undefined;
   if (!providers || !(name in providers)) return null;
   delete providers[name];
-  if (Object.keys(providers).length === 0) delete cfg.providers;
+  if (Object.keys(providers).length === 0) delete cfg.provider;
   return JSON.stringify(cfg, null, 2) + "\n";
 }
 
@@ -168,27 +168,29 @@ async function stripProviderConfig(): Promise<void> {
     return;
   }
   const dir = path.join(configDir(), "opencode");
+  const names = ["commandcode-direct", "commandcode"];
   for (const file of ["opencode.json", "opencode.jsonc"]) {
     const p = path.join(dir, file);
     if (!existsSync(p)) continue;
-    const raw = await Bun.file(p).text();
-    let next: string | null = null;
-    if (file.endsWith(".jsonc")) {
-      // Try strict parse first (no comments), fall back to textual removal.
-      next = removeProviderFromJson(raw, "commandcode") ?? removeProviderFromJsonc(raw, "commandcode");
-    } else {
-      next = removeProviderFromJson(raw, "commandcode");
+    let raw = await Bun.file(p).text();
+    let removedAny = false;
+    for (const name of names) {
+      const next =
+        file.endsWith(".jsonc")
+          ? (removeProviderFromJson(raw, name) ?? removeProviderFromJsonc(raw, name))
+          : removeProviderFromJson(raw, name);
+      if (next === null) continue;
+      raw = next;
+      removedAny = true;
+      if (DRY) log(`would remove ${name} provider from ${p}`);
     }
-    if (next === null) {
+    if (!removedAny) {
       log(`${file}: no commandcode provider found, skipping`);
       continue;
     }
-    if (DRY) {
-      log(`would remove commandcode provider from ${p}`);
-      continue;
-    }
-    await Bun.write(p, next);
-    log(`removed commandcode provider from ${p}`);
+    if (DRY) continue;
+    await Bun.write(p, raw);
+    log(`removed commandcode provider(s) from ${p}`);
   }
 }
 

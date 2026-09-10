@@ -100,6 +100,7 @@ const WORKING_DIR = process.env.COMMANDCODE_WORKING_DIR || process.cwd();
 const STATIC_MODELS = [
   "deepseek/deepseek-v4-flash",
   "deepseek/deepseek-v4.1-flash",
+  "deepseek/deepseek-v4-flash-fast",
   "meituan/LongCat-2.0:free",
   "zai-org/glm-5.3-flash",
   "meta/muse-spark-1.3-contributor",

@@ -87,63 +87,94 @@ interface ProviderConfig {
   models: Record<string, unknown>;
 }
 
+export function buildModels(): Record<string, unknown> {
+  return {
+    "deepseek/deepseek-v4-flash": {
+      id: "deepseek/deepseek-v4-flash",
+      name: "DeepSeek V4 Flash",
+      variants: {
+        low: { reasoningEffort: "low" },
+        medium: { reasoningEffort: "medium" },
+        high: { reasoningEffort: "high" },
+        max: { reasoningEffort: "high", thinking: { type: "enabled", budgetTokens: 16000 } },
+      },
+    },
+    "deepseek/deepseek-v4.1-flash": {
+      id: "deepseek/deepseek-v4.1-flash",
+      name: "DeepSeek V4.1 Flash",
+      variants: {
+        low: { reasoningEffort: "low" },
+        medium: { reasoningEffort: "medium" },
+        high: { reasoningEffort: "high" },
+        max: { reasoningEffort: "high", thinking: { type: "enabled", budgetTokens: 16000 } },
+      },
+    },
+    "deepseek/deepseek-v4-flash-fast": {
+      id: "deepseek/deepseek-v4-flash-fast",
+      name: "DeepSeek V4 Flash Fast",
+      variants: {
+        low: { reasoningEffort: "low" },
+        medium: { reasoningEffort: "medium" },
+        high: { reasoningEffort: "high" },
+        max: { reasoningEffort: "high", thinking: { type: "enabled", budgetTokens: 16000 } },
+      },
+    },
+    "meituan/LongCat-2.0:free": {
+      id: "meituan/LongCat-2.0:free",
+      name: "LongCat-2.0:Free",
+      variants: {
+        think: { thinking: { type: "enabled", budgetTokens: 8000 } },
+      },
+    },
+    "zai-org/glm-5.3-flash": {
+      id: "zai-org/glm-5.3-flash",
+      name: "GLM-5.3-Flash",
+      variants: {
+        think: { thinking: { type: "enabled", budgetTokens: 8000 } },
+      },
+    },
+    "meta/muse-spark-1.3-contributor": {
+      id: "meta/muse-spark-1.3-contributor",
+      name: "Muse Spark 1.3 Contributor",
+      variants: {
+        low: { thinking: { type: "enabled", budgetTokens: 4000 } },
+        high: { thinking: { type: "enabled", budgetTokens: 8000 } },
+        xhigh: { thinking: { type: "enabled", budgetTokens: 16000 } },
+      },
+    },
+    "meta/muse-spark-1.2-contributor": {
+      id: "meta/muse-spark-1.2-contributor",
+      name: "Muse Spark 1.2 Contributor",
+      variants: {
+        think: { thinking: { type: "enabled", budgetTokens: 8000 } },
+      },
+    },
+  };
+}
+
 export function buildProviderConfig(hasKey: boolean): ProviderConfig {
   const cfg: ProviderConfig = {
     name: "CommandCode Go (via local proxy)",
     npm: "@ai-sdk/openai-compatible",
     options: { baseURL: `${PROXY_URL}/v1` },
-    models: {
-      "deepseek/deepseek-v4-flash": {
-        id: "deepseek/deepseek-v4-flash",
-        name: "DeepSeek V4 Flash",
-        variants: {
-          low: { reasoningEffort: "low" },
-          medium: { reasoningEffort: "medium" },
-          high: { reasoningEffort: "high" },
-          max: { reasoningEffort: "high", thinking: { type: "enabled", budgetTokens: 16000 } },
-        },
-      },
-      "deepseek/deepseek-v4.1-flash": {
-        id: "deepseek/deepseek-v4.1-flash",
-        name: "DeepSeek V4.1 Flash",
-        variants: {
-          low: { reasoningEffort: "low" },
-          medium: { reasoningEffort: "medium" },
-          high: { reasoningEffort: "high" },
-          max: { reasoningEffort: "high", thinking: { type: "enabled", budgetTokens: 16000 } },
-        },
-      },
-      "meituan/LongCat-2.0:free": {
-        id: "meituan/LongCat-2.0:free",
-        name: "LongCat-2.0:Free",
-        variants: {
-          think: { thinking: { type: "enabled", budgetTokens: 8000 } },
-        },
-      },
-      "zai-org/glm-5.3-flash": {
-        id: "zai-org/glm-5.3-flash",
-        name: "GLM-5.3-Flash",
-        variants: {
-          think: { thinking: { type: "enabled", budgetTokens: 8000 } },
-        },
-      },
-      "meta/muse-spark-1.3-contributor": {
-        id: "meta/muse-spark-1.3-contributor",
-        name: "Muse Spark 1.3 Contributor",
-        variants: {
-          low: { thinking: { type: "enabled", budgetTokens: 4000 } },
-          high: { thinking: { type: "enabled", budgetTokens: 8000 } },
-          xhigh: { thinking: { type: "enabled", budgetTokens: 16000 } },
-        },
-      },
-      "meta/muse-spark-1.2-contributor": {
-        id: "meta/muse-spark-1.2-contributor",
-        name: "Muse Spark 1.2 Contributor",
-        variants: {
-          think: { thinking: { type: "enabled", budgetTokens: 8000 } },
-        },
-      },
-    },
+    models: buildModels(),
+  };
+  if (!hasKey) {
+    cfg.env = ["COMMANDCODE_API_KEY"];
+  }
+  return cfg;
+}
+
+// Direct OpenAI-compatible endpoint (GOAT plan). No proxy conversion —
+// OpenCode talks straight to /provider/v1/chat/completions.
+export const DIRECT_BASE_URL = "https://api.commandcode.ai/provider/v1";
+
+export function buildDirectProviderConfig(hasKey: boolean): ProviderConfig {
+  const cfg: ProviderConfig = {
+    name: "CommandCode Direct (GOAT)",
+    npm: "@ai-sdk/openai-compatible",
+    options: { baseURL: DIRECT_BASE_URL },
+    models: buildModels(),
   };
   if (!hasKey) {
     cfg.env = ["COMMANDCODE_API_KEY"];
@@ -391,9 +422,16 @@ export function hasComments(text: string): boolean {
   return false;
 }
 
-// Surgical JSONC merge: replace/insert only the commandcode provider block,
+// Surgical JSONC merge: replace/insert only the named provider block,
 // preserving comments and formatting elsewhere. Returns null on failure.
-export function mergeProviderJsonc(raw: string, providerSnippet: string): string | null {
+// `name` is the provider key (default "commandcode"). When `atStart` is true a
+// new block is inserted first inside `provider` instead of appended last.
+export function mergeProviderJsonc(
+  raw: string,
+  providerSnippet: string,
+  name = "commandcode",
+  atStart = false,
+): string | null {
   const providersRange = findKeyBlockRange(raw, "provider");
   if (!providersRange) {
     // No providers block: insert before final closing brace of root object.
@@ -407,7 +445,7 @@ export function mergeProviderJsonc(raw: string, providerSnippet: string): string
     return `${before}${needsComma ? "," : ""}\n  "provider": {\n    ${providerSnippet}\n  }\n${after}`;
   }
   const [pStart, pStop] = providersRange;
-  const existing = findKeyBlockRange(raw, "commandcode", pStart);
+  const existing = findKeyBlockRange(raw, name, pStart);
   if (existing && existing[0] < pStop) {
     return raw.slice(0, existing[0]) + providerSnippet + raw.slice(existing[1]);
   }
@@ -418,6 +456,12 @@ export function mergeProviderJsonc(raw: string, providerSnippet: string): string
   if (stripJsonComments(innerBody).trim() === "") {
     return `${raw.slice(0, pStart)}"provider": {\n    ${providerSnippet}\n  }${raw.slice(pStop)}`;
   }
+  if (atStart) {
+    const insertAt = pStart + openBrace + 1;
+    const afterInsert = raw.slice(insertAt).trimStart();
+    const needsComma = !afterInsert.startsWith("}");
+    return `${raw.slice(0, insertAt)}\n    ${providerSnippet}${needsComma ? "," : ""}\n  ${afterInsert}`;
+  }
   const insertAt = pStop - 1;
   const beforeInsert = raw.slice(0, insertAt).trimEnd();
   const needsComma = !beforeInsert.endsWith("{") && !beforeInsert.endsWith(",");
@@ -426,24 +470,29 @@ export function mergeProviderJsonc(raw: string, providerSnippet: string): string
 
 async function ensureOpencodeConfig(hasKey: boolean): Promise<void> {
   const cfgPath = opencodeConfigFile();
-  const providerCfg = buildProviderConfig(hasKey);
-  const snippetBody = JSON.stringify(providerCfg, null, 2)
-    .split("\n")
-    .map((line, i) => (i === 0 ? line : `    ${line}`))
-    .join("\n");
-  const snippet = `"commandcode": ${snippetBody}`;
+  const snippetFor = (name: string, providerCfg: ProviderConfig): string => {
+    const body = JSON.stringify(providerCfg, null, 2)
+      .split("\n")
+      .map((line, i) => (i === 0 ? line : `    ${line}`))
+      .join("\n");
+    return `"${name}": ${body}`;
+  };
+  const directSnippet = snippetFor("commandcode-direct", buildDirectProviderConfig(hasKey));
+  const proxySnippet = snippetFor("commandcode", buildProviderConfig(hasKey));
 
   if (existsSync(cfgPath)) {
     const raw = await Bun.file(cfgPath).text();
     const isJsonc = cfgPath.endsWith(".jsonc") || hasComments(raw);
     if (isJsonc) {
-      const merged = mergeProviderJsonc(raw, snippet);
+      // Direct (GOAT) endpoint goes first; the proxy stays as the second option.
+      let merged = mergeProviderJsonc(raw, directSnippet, "commandcode-direct", true);
+      if (merged !== null) merged = mergeProviderJsonc(merged, proxySnippet, "commandcode");
       if (merged !== null) {
         await Bun.write(cfgPath, merged);
         log(`opencode config updated at ${cfgPath} (comments preserved)`);
         return;
       }
-      warn(`could not safely edit ${cfgPath} — leaving comments intact; add the commandcode provider manually`);
+      warn(`could not safely edit ${cfgPath} — leaving comments intact; add the commandcode providers manually`);
       return;
     }
   }
@@ -453,7 +502,9 @@ async function ensureOpencodeConfig(hasKey: boolean): Promise<void> {
 
   const providers: Record<string, unknown> =
     (cfg.provider as Record<string, unknown> | undefined) ?? {};
-  providers.commandcode = providerCfg;
+  // Rebuild in order so the direct endpoint is listed first.
+  providers["commandcode-direct"] = buildDirectProviderConfig(hasKey);
+  providers.commandcode = buildProviderConfig(hasKey);
   cfg.provider = providers;
 
   await Bun.write(cfgPath, JSON.stringify(cfg, null, 2));

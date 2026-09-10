@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { buildProviderConfig, mergeProviderJsonc, stripJsonComments, hasComments } from "./setup.js";
+import {
+  buildProviderConfig,
+  buildDirectProviderConfig,
+  mergeProviderJsonc,
+  stripJsonComments,
+  hasComments,
+} from "./setup.js";
 
 const SNIPPET = `"commandcode": {\n    "name": "New"\n  }`;
 
@@ -122,5 +128,39 @@ describe("buildProviderConfig (OpenCode v1/v2 schema)", () => {
       reasoningEffort: "high",
       thinking: { type: "enabled", budgetTokens: 16000 },
     });
+  });
+});
+
+describe("buildDirectProviderConfig (GOAT endpoint)", () => {
+  test("points at the direct OpenAI-compatible endpoint, no proxy", () => {
+    const direct = buildDirectProviderConfig(true);
+    expect(direct.options.baseURL).toBe("https://api.commandcode.ai/provider/v1");
+    expect(direct.options.baseURL).not.toContain("127.0.0.1");
+    expect(direct.npm).toBe("@ai-sdk/openai-compatible");
+    expect(direct.name).toBe("CommandCode Direct (GOAT)");
+  });
+
+  test("shares the same model set and env behavior as the proxy config", () => {
+    expect(Object.keys(buildDirectProviderConfig(true).models)).toEqual(
+      Object.keys(buildProviderConfig(true).models),
+    );
+    expect(buildDirectProviderConfig(false).env).toEqual(["COMMANDCODE_API_KEY"]);
+    expect(buildDirectProviderConfig(true).env).toBeUndefined();
+  });
+});
+
+describe("mergeProviderJsonc ordered providers", () => {
+  test("inserts a provider first without dropping existing ones", () => {
+    const raw = `{
+  "provider": {
+    "commandcode": { "name": "Proxy" }
+  }
+}`;
+    const merged = mergeProviderJsonc(raw, `"commandcode-direct": { "name": "Direct" }`, "commandcode-direct", true)!;
+    expect(merged).not.toBeNull();
+    const providers = merged.indexOf('"commandcode-direct"');
+    expect(providers).toBeGreaterThan(-1);
+    expect(providers).toBeLessThan(merged.indexOf('"commandcode"'));
+    expect(merged).toContain('"name": "Proxy"');
   });
 });
